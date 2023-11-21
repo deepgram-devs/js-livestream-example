@@ -1,6 +1,16 @@
-# Repo Name
+# js-livestream-example
 
-A repository template for open-source demos, guides and sample apps. Description here.
+A Deepgram real-time transcription example that is entirely client-side.
+
+## Get it Working
+
+1. Add your Deepgram API key in the `index.js` file here:
+
+```js
+const deepgram = createClient(DEEPGRAM_API_KEY);
+```
+
+2. Open up the `index.html` file to see it working in the browser.
 
 ## Development and Contributing
 
