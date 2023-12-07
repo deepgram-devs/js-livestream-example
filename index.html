@@ -2,17 +2,81 @@
   <head>
     <meta charset="utf-8" />
     <title>Simple Speech-to-Text</title>
-    <!-- Include necessary libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/@deepgram/sdk@v3.0.0-beta.4"></script>
   </head>
   <body>
-    <!-- Button to start/stop recording -->
     <button id="record">Toggle Recording</button>
-    <!-- Display status text here -->
     <span id="status"></span>
-    <!-- Display captions here -->
     <div id="captions"></div>
-    <!-- Include the main script -->
-    <script src="index.js" type="module"></script>
+
+    <script type="module">
+      // Import what we need from the deepgram library
+      import {
+        createClient,
+        LiveTranscriptionEvents,
+      } from "https://cdn.jsdelivr.net/npm/@deepgram/sdk/+esm";
+
+      let mediaRecorder;
+
+      const startRecording = async () => {
+        // Create a Deepgram client with your API key (remember not to push up your code with this key)
+        const deepgram = createClient("INSERT_API_KEY_HERE");
+
+        // Set up a live transcription connection
+        const dgConnection = deepgram.listen.live({
+          model: "nova",
+          diarize: true,
+          interim_results: true,
+        });
+
+        // DG event handler when the transcription connection is open
+        dgConnection.on(LiveTranscriptionEvents.Open, () => {
+          // DG event handler for incoming transcription data
+          dgConnection.on(LiveTranscriptionEvents.Transcript, (data) => {
+            // Display the transcript in the captions div
+            document.querySelector("#captions").textContent +=
+              data.channel.alternatives[0].transcript + " ";
+            console.log(data);
+          });
+
+          // Get access to the microphone
+          navigator.mediaDevices
+            .getUserMedia({ audio: true })
+            .then((stream) => {
+              // Create a media recorder with the audio stream
+              mediaRecorder = new MediaRecorder(stream, {
+                mimeType: "audio/webm",
+              });
+
+              // Event handler when audio data is available from the mic
+              mediaRecorder.addEventListener("dataavailable", async (event) => {
+                if (event.data.size > 0) {
+                  // Send audio data to Deepgram connection
+                  dgConnection.send(event.data);
+                }
+              });
+
+              // Start recording every 1000 milliseconds (1 second)
+              mediaRecorder.start(1000);
+            })
+            .catch((error) => {
+              console.error("Error accessing microphone:", error);
+            });
+        });
+      };
+
+      // Event listener for the record button
+      document.querySelector("#record").addEventListener("click", () => {
+        // Check if recording is in progress
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+          // Stop recording if in progress
+          mediaRecorder.stop();
+          document.querySelector("#status").textContent = "";
+        } else {
+          // Start recording if not in progress
+          startRecording();
+          document.querySelector("#status").textContent = "Listening...";
+        }
+      });
+    </script>
   </body>
 </html>
